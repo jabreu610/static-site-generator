@@ -81,3 +81,12 @@ def split_nodes_link(nodes_to_transform: list[TextNode]) -> list[TextNode]:
             for text, url in links:
                 output.append(TextNode(text, TextType.LINK, url))
     return output
+
+
+def text_to_textnodes(text: str):
+    root_node = TextNode(text, TextType.PLAIN)
+    with_bold = split_nodes_delimiter([root_node], "**", TextType.BOLD)
+    with_italics = split_nodes_delimiter(with_bold, "_", TextType.ITALIC)
+    with_code = split_nodes_delimiter(with_italics, "`", TextType.CODE)
+    with_images = split_nodes_image(with_code)
+    return split_nodes_link(with_images)

@@ -6,6 +6,7 @@ from transform import (
     split_nodes_image,
     split_nodes_link,
     text_node_to_html_node,
+    text_to_textnodes,
 )
 
 
@@ -251,6 +252,133 @@ class TestTransform(unittest.TestCase):
                 TextNode("link", TextType.LINK, "https://example.com"),
             ],
             new_nodes,
+        )
+
+    def test_text_to_textnodes_plain(self):
+        # Test plain text with no markdown
+        nodes = text_to_textnodes("Just plain text")
+        self.assertListEqual([TextNode("Just plain text", TextType.PLAIN)], nodes)
+
+    def test_text_to_textnodes_bold(self):
+        # Test text with bold formatting
+        nodes = text_to_textnodes("This is **bold** text")
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.PLAIN),
+                TextNode("bold", TextType.BOLD),
+                TextNode(" text", TextType.PLAIN),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_italic(self):
+        # Test text with italic formatting
+        nodes = text_to_textnodes("This is _italic_ text")
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.PLAIN),
+                TextNode("italic", TextType.ITALIC),
+                TextNode(" text", TextType.PLAIN),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_code(self):
+        # Test text with code formatting
+        nodes = text_to_textnodes("This is `code` text")
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.PLAIN),
+                TextNode("code", TextType.CODE),
+                TextNode(" text", TextType.PLAIN),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_image(self):
+        # Test text with image
+        nodes = text_to_textnodes("This is ![an image](https://example.com/image.png)")
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.PLAIN),
+                TextNode("an image", TextType.IMAGE, "https://example.com/image.png"),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_link(self):
+        # Test text with link
+        nodes = text_to_textnodes("This is [a link](https://example.com)")
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.PLAIN),
+                TextNode("a link", TextType.LINK, "https://example.com"),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_mixed_formatting(self):
+        # Test text with multiple different formatting types
+        nodes = text_to_textnodes("This is **bold** and _italic_ and `code` text")
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.PLAIN),
+                TextNode("bold", TextType.BOLD),
+                TextNode(" and ", TextType.PLAIN),
+                TextNode("italic", TextType.ITALIC),
+                TextNode(" and ", TextType.PLAIN),
+                TextNode("code", TextType.CODE),
+                TextNode(" text", TextType.PLAIN),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_complex(self):
+        # Test complex text with all formatting types
+        nodes = text_to_textnodes(
+            "This is **text** with an _italic_ word and a `code block` and an ![image](https://i.imgur.com/zjjcJKZ.png) and a [link](https://boot.dev)"
+        )
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.PLAIN),
+                TextNode("text", TextType.BOLD),
+                TextNode(" with an ", TextType.PLAIN),
+                TextNode("italic", TextType.ITALIC),
+                TextNode(" word and a ", TextType.PLAIN),
+                TextNode("code block", TextType.CODE),
+                TextNode(" and an ", TextType.PLAIN),
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and a ", TextType.PLAIN),
+                TextNode("link", TextType.LINK, "https://boot.dev"),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_multiple_same_type(self):
+        # Test with multiple instances of the same formatting type
+        nodes = text_to_textnodes("**bold1** and **bold2** and **bold3**")
+        self.assertListEqual(
+            [
+                TextNode("bold1", TextType.BOLD),
+                TextNode(" and ", TextType.PLAIN),
+                TextNode("bold2", TextType.BOLD),
+                TextNode(" and ", TextType.PLAIN),
+                TextNode("bold3", TextType.BOLD),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_sequential_processing(self):
+        # Test that formatting is processed sequentially (bold first, then code)
+        # The `code` backticks inside **bold** are processed after bold is split
+        nodes = text_to_textnodes("Text with **bold and `code`** together")
+        self.assertListEqual(
+            [
+                TextNode("Text with ", TextType.PLAIN),
+                TextNode("bold and `code`", TextType.BOLD),
+                TextNode(" together", TextType.PLAIN),
+            ],
+            nodes,
         )
 
 
