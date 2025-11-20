@@ -1,3 +1,7 @@
+import re
+
+import constants
+from extract import extract_markdown_images, extract_markdown_links
 from leafnode import LeafNode
 from textnode import TextNode, TextType
 
@@ -38,4 +42,42 @@ def split_nodes_delimiter(
                 output.append(TextNode(segments[index], TextType.PLAIN))
             else:
                 output.append(TextNode(segments[index], text_type))
+    return output
+
+
+def split_nodes_image(nodes_to_transform: list[TextNode]) -> list[TextNode]:
+    output = []
+    for node in nodes_to_transform:
+        if node.text_type != TextType.PLAIN:
+            output.append(node)
+            continue
+        segments = re.split(constants.MARKDOWN_IMAGE_REGEX, node.text)
+        for segment in segments:
+            if len(segment) == 0:
+                continue
+            if re.fullmatch(constants.MARKDOWN_IMAGE_REGEX, segment) is None:
+                output.append(TextNode(segment, TextType.PLAIN))
+                continue
+            images = extract_markdown_images(segment)
+            for alt, image in images:
+                output.append(TextNode(alt, TextType.IMAGE, image))
+    return output
+
+
+def split_nodes_link(nodes_to_transform: list[TextNode]) -> list[TextNode]:
+    output = []
+    for node in nodes_to_transform:
+        if node.text_type != TextType.PLAIN:
+            output.append(node)
+            continue
+        segments = re.split(constants.MARKDOWN_LINK_REGEX, node.text)
+        for segment in segments:
+            if len(segment) == 0:
+                continue
+            if re.fullmatch(constants.MARKDOWN_LINK_REGEX, segment) is None:
+                output.append(TextNode(segment, TextType.PLAIN))
+                continue
+            links = extract_markdown_links(segment)
+            for text, url in links:
+                output.append(TextNode(text, TextType.LINK, url))
     return output

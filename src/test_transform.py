@@ -1,7 +1,12 @@
 import unittest
 
 from textnode import TextNode, TextType
-from transform import split_nodes_delimiter, text_node_to_html_node
+from transform import (
+    split_nodes_delimiter,
+    split_nodes_image,
+    split_nodes_link,
+    text_node_to_html_node,
+)
 
 
 class TestTransform(unittest.TestCase):
@@ -126,6 +131,126 @@ class TestTransform(unittest.TestCase):
                 TextNode("bold2", TextType.BOLD),
                 TextNode(" words", TextType.PLAIN),
             ],
+        )
+
+    def test_split_images(self):
+        node = TextNode(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+            TextType.PLAIN,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.PLAIN),
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and another ", TextType.PLAIN),
+                TextNode(
+                    "second image",
+                    TextType.IMAGE,
+                    "https://i.imgur.com/3elNhQu.png",
+                ),
+            ],
+            new_nodes,
+        )
+
+    def test_split_nodes_image_single(self):
+        # Test splitting a single image
+        node = TextNode(
+            "Text before ![alt text](https://example.com/image.png) text after",
+            TextType.PLAIN,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("Text before ", TextType.PLAIN),
+                TextNode("alt text", TextType.IMAGE, "https://example.com/image.png"),
+                TextNode(" text after", TextType.PLAIN),
+            ],
+            new_nodes,
+        )
+
+    def test_split_nodes_image_no_images(self):
+        # Test when there are no images in the text
+        node = TextNode("Plain text with no images", TextType.PLAIN)
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [TextNode("Plain text with no images", TextType.PLAIN)], new_nodes
+        )
+
+    def test_split_nodes_image_non_plain_passthrough(self):
+        # Test that non-plain nodes pass through unchanged
+        nodes = [
+            TextNode("Bold text", TextType.BOLD),
+            TextNode(
+                "Plain with ![image](https://example.com/pic.png)", TextType.PLAIN
+            ),
+        ]
+        new_nodes = split_nodes_image(nodes)
+        self.assertListEqual(
+            [
+                TextNode("Bold text", TextType.BOLD),
+                TextNode("Plain with ", TextType.PLAIN),
+                TextNode("image", TextType.IMAGE, "https://example.com/pic.png"),
+            ],
+            new_nodes,
+        )
+
+    def test_split_nodes_link_single(self):
+        # Test splitting a single link
+        node = TextNode(
+            "Text before [link text](https://example.com) text after",
+            TextType.PLAIN,
+        )
+        new_nodes = split_nodes_link([node])
+        self.assertListEqual(
+            [
+                TextNode("Text before ", TextType.PLAIN),
+                TextNode("link text", TextType.LINK, "https://example.com"),
+                TextNode(" text after", TextType.PLAIN),
+            ],
+            new_nodes,
+        )
+
+    def test_split_nodes_link_multiple(self):
+        # Test splitting multiple links
+        node = TextNode(
+            "Visit [Google](https://google.com) or [GitHub](https://github.com) today",
+            TextType.PLAIN,
+        )
+        new_nodes = split_nodes_link([node])
+        self.assertListEqual(
+            [
+                TextNode("Visit ", TextType.PLAIN),
+                TextNode("Google", TextType.LINK, "https://google.com"),
+                TextNode(" or ", TextType.PLAIN),
+                TextNode("GitHub", TextType.LINK, "https://github.com"),
+                TextNode(" today", TextType.PLAIN),
+            ],
+            new_nodes,
+        )
+
+    def test_split_nodes_link_no_links(self):
+        # Test when there are no links in the text
+        node = TextNode("Plain text with no links", TextType.PLAIN)
+        new_nodes = split_nodes_link([node])
+        self.assertListEqual(
+            [TextNode("Plain text with no links", TextType.PLAIN)], new_nodes
+        )
+
+    def test_split_nodes_link_non_plain_passthrough(self):
+        # Test that non-plain nodes pass through unchanged
+        nodes = [
+            TextNode("Code text", TextType.CODE),
+            TextNode("Plain with [link](https://example.com)", TextType.PLAIN),
+        ]
+        new_nodes = split_nodes_link(nodes)
+        self.assertListEqual(
+            [
+                TextNode("Code text", TextType.CODE),
+                TextNode("Plain with ", TextType.PLAIN),
+                TextNode("link", TextType.LINK, "https://example.com"),
+            ],
+            new_nodes,
         )
 
 
