@@ -1,6 +1,6 @@
 import unittest
 
-from extract import extract_markdown_images, extract_markdown_links
+from extract import extract_markdown_images, extract_markdown_links, markdown_to_blocks
 
 
 class TestExtract(unittest.TestCase):
@@ -91,6 +91,66 @@ class TestExtract(unittest.TestCase):
         text = "Check out ![my photo](https://example.com/photo.jpg) and visit [my site](https://example.com)"
         matches = extract_markdown_images(text)
         self.assertListEqual([("my photo", "https://example.com/photo.jpg")], matches)
+
+    def test_markdown_to_blocks(self):
+        input = """# This is a heading
+
+This is a paragraph of text. It has some **bold** and _italic_ words inside of it.
+
+- This is the first list item in a list block
+- This is a list item
+- This is another list item"""
+        expected = [
+            "# This is a heading",
+            "This is a paragraph of text. It has some **bold** and _italic_ words inside of it.",
+            """- This is the first list item in a list block\n- This is a list item\n- This is another list item""",
+        ]
+        output = markdown_to_blocks(input)
+        self.assertListEqual(expected, output)
+
+    def test_markdown_to_blocks_single_block(self):
+        # Test when there's only one block (no double newlines)
+        input = "This is a single paragraph with no blank lines."
+        expected = ["This is a single paragraph with no blank lines."]
+        output = markdown_to_blocks(input)
+        self.assertListEqual(expected, output)
+
+    def test_markdown_to_blocks_excessive_whitespace(self):
+        # Test handling multiple blank lines between blocks
+        input = """# Heading
+
+
+Paragraph one
+
+
+
+Paragraph two"""
+        expected = ["# Heading", "Paragraph one", "Paragraph two"]
+        output = markdown_to_blocks(input)
+        self.assertListEqual(expected, output)
+
+    def test_markdown_to_blocks_leading_trailing_whitespace(self):
+        # Test blocks with leading/trailing whitespace
+        input = """  # Heading with spaces
+
+  Paragraph with spaces  """
+        expected = ["# Heading with spaces", "Paragraph with spaces"]
+        output = markdown_to_blocks(input)
+        self.assertListEqual(expected, output)
+
+    def test_markdown_to_blocks_empty_string(self):
+        # Test empty input
+        input = ""
+        expected = []
+        output = markdown_to_blocks(input)
+        self.assertListEqual(expected, output)
+
+    def test_markdown_to_blocks_only_whitespace(self):
+        # Test input with only whitespace and newlines
+        input = "\n\n\n\n"
+        expected = []
+        output = markdown_to_blocks(input)
+        self.assertListEqual(expected, output)
 
 
 if __name__ == "__main__":
