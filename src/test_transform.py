@@ -1,7 +1,7 @@
 import unittest
 
 from textnode import TextNode, TextType
-from transform import text_node_to_html_node
+from transform import split_nodes_delimiter, text_node_to_html_node
 
 
 class TestTransform(unittest.TestCase):
@@ -59,6 +59,74 @@ class TestTransform(unittest.TestCase):
         node = TextNode('Text with <special> & "characters"', TextType.PLAIN)
         html_node = text_node_to_html_node(node)
         self.assertEqual(html_node.to_html(), 'Text with <special> & "characters"')
+
+    def test_split_nodes_delimiter(self):
+        node = TextNode(
+            "This is text with a `code phrase` in the middle", TextType.PLAIN
+        )
+        nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertListEqual(
+            nodes,
+            [
+                TextNode("This is text with a ", TextType.PLAIN),
+                TextNode("code phrase", TextType.CODE),
+                TextNode(" in the middle", TextType.PLAIN),
+            ],
+        )
+
+    def test_split_nodes_delimiter_multiple_delimiters(self):
+        # Test with multiple delimited segments in a single node
+        node = TextNode("Text with *bold* and *more bold* words", TextType.PLAIN)
+        nodes = split_nodes_delimiter([node], "*", TextType.BOLD)
+        self.assertListEqual(
+            nodes,
+            [
+                TextNode("Text with ", TextType.PLAIN),
+                TextNode("bold", TextType.BOLD),
+                TextNode(" and ", TextType.PLAIN),
+                TextNode("more bold", TextType.BOLD),
+                TextNode(" words", TextType.PLAIN),
+            ],
+        )
+
+    def test_split_nodes_delimiter_non_plain_passthrough(self):
+        # Test that non-plain text nodes pass through unchanged
+        nodes = [
+            TextNode("Already bold", TextType.BOLD),
+            TextNode("Plain with `code`", TextType.PLAIN),
+        ]
+        result = split_nodes_delimiter(nodes, "`", TextType.CODE)
+        self.assertListEqual(
+            result,
+            [
+                TextNode("Already bold", TextType.BOLD),
+                TextNode("Plain with ", TextType.PLAIN),
+                TextNode("code", TextType.CODE),
+            ],
+        )
+
+    def test_split_nodes_delimiter_unmatched(self):
+        # Test that unmatched delimiter raises ValueError
+        node = TextNode("Text with unmatched `delimiter", TextType.PLAIN)
+        with self.assertRaises(ValueError) as context:
+            split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertEqual(
+            str(context.exception), "Input text node should include pairs of delimiter"
+        )
+
+    def test_split_nodes_delimiter_adjacent_segments(self):
+        # Test with adjacent bold segments (no text between delimiters)
+        node = TextNode("Text with *bold1**bold2* words", TextType.PLAIN)
+        nodes = split_nodes_delimiter([node], "*", TextType.BOLD)
+        self.assertListEqual(
+            nodes,
+            [
+                TextNode("Text with ", TextType.PLAIN),
+                TextNode("bold1", TextType.BOLD),
+                TextNode("bold2", TextType.BOLD),
+                TextNode(" words", TextType.PLAIN),
+            ],
+        )
 
 
 if __name__ == "__main__":
