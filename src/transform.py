@@ -1,9 +1,62 @@
 import re
 
 import constants
-from extract import extract_markdown_images, extract_markdown_links
+from block import BlockType, block_to_block_type
+from extract import extract_markdown_images, extract_markdown_links, markdown_to_blocks
+from htmlnode import HTMLNode, get_tag_from_block_type
 from leafnode import LeafNode
+from parentnode import ParentNode
 from textnode import TextNode, TextType
+
+
+def text_to_leaf_nodes(text: str) -> list[HTMLNode]:
+    nodes = text_to_textnodes(text)
+    return list(map(text_node_to_html_node, nodes))
+
+
+def get_children_for_block_type(type: BlockType, block: str) -> list[HTMLNode]:
+    if type == BlockType.HEADING:
+        text = re.sub(r"^#{1,6}\s+", "", block)
+        return text_to_leaf_nodes(text)
+    if type == BlockType.QUOTE:
+        text = re.sub(r"^>\s?", "", block)
+        return text_to_leaf_nodes(text)
+    if type == BlockType.UNORDERED_LIST:
+        lines = block.split("\n")
+        return list(
+            map(
+                lambda x: ParentNode("li", text_to_leaf_nodes(re.sub(r"^-\s+", "", x))),
+                lines,
+            )
+        )
+    if type == BlockType.ORDERED_LIST:
+        lines = block.split("\n")
+        return list(
+            map(
+                lambda x: ParentNode(
+                    "li", text_to_leaf_nodes(re.sub(r"^\d+\.\s+", "", x))
+                ),
+                lines,
+            )
+        )
+    if type == BlockType.CODE:
+        return [
+            text_node_to_html_node(
+                TextNode("".join(block.splitlines(True)[1:-1]), TextType.CODE)
+            )
+        ]
+    return text_to_leaf_nodes(block.strip().replace("\n", " "))
+
+
+def markdown_to_html_node(markdown: str) -> HTMLNode:
+    blocks = markdown_to_blocks(markdown)
+    html_children = []
+    for block in blocks:
+        block_type = block_to_block_type(block)
+        tag = get_tag_from_block_type(block_type, block)
+        children = get_children_for_block_type(block_type, block)
+        html_children.append(ParentNode(tag, children))
+    return ParentNode("div", html_children)
 
 
 def text_node_to_html_node(text_node: TextNode) -> LeafNode:

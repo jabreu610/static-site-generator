@@ -2,6 +2,7 @@ import unittest
 
 from textnode import TextNode, TextType
 from transform import (
+    markdown_to_html_node,
     split_nodes_delimiter,
     split_nodes_image,
     split_nodes_link,
@@ -380,6 +381,120 @@ class TestTransform(unittest.TestCase):
             ],
             nodes,
         )
+
+    def test_paragraphs(self):
+        md = """
+This is **bolded** paragraph
+text in a p
+tag here
+
+This is another paragraph with _italic_ text and `code` here
+
+"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><p>This is <b>bolded</b> paragraph text in a p tag here</p><p>This is another paragraph with <i>italic</i> text and <code>code</code> here</p></div>",
+        )
+
+    def test_codeblock(self):
+        md = """
+```
+This is text that _should_ remain
+the **same** even with inline stuff
+```
+"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff\n</code></pre></div>",
+        )
+
+    def test_markdown_to_html_node_heading(self):
+        # Test heading conversion
+        md = "## This is a heading"
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(html, "<div><h2>This is a heading</h2></div>")
+
+    def test_markdown_to_html_node_multiple_headings(self):
+        # Test multiple headings with different levels
+        md = """# Main Title
+
+## Subtitle
+
+### Section"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><h1>Main Title</h1><h2>Subtitle</h2><h3>Section</h3></div>",
+        )
+
+    def test_markdown_to_html_node_quote(self):
+        # Test blockquote conversion
+        md = "> This is a quote"
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(html, "<div><blockquote>This is a quote</blockquote></div>")
+
+    def test_markdown_to_html_node_unordered_list(self):
+        # Test unordered list conversion
+        md = """- Item 1
+- Item 2
+- Item 3"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html, "<div><ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul></div>"
+        )
+
+    def test_markdown_to_html_node_ordered_list(self):
+        # Test ordered list conversion
+        md = """1. First
+2. Second
+3. Third"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><ol><li>First</li><li>Second</li><li>Third</li></ol></div>",
+        )
+
+    def test_markdown_to_html_node_mixed_blocks(self):
+        # Test document with multiple different block types
+        md = """# Title
+
+This is a paragraph with **bold** text.
+
+> A wise quote
+
+- List item 1
+- List item 2"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><h1>Title</h1><p>This is a paragraph with <b>bold</b> text.</p><blockquote>A wise quote</blockquote><ul><li>List item 1</li><li>List item 2</li></ul></div>",
+        )
+
+    def test_markdown_to_html_node_empty_string(self):
+        # Test with empty markdown
+        md = ""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(html, "<div></div>")
+
+    def test_markdown_to_html_node_only_whitespace(self):
+        # Test with only whitespace
+        md = "\n\n\n"
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(html, "<div></div>")
 
 
 if __name__ == "__main__":

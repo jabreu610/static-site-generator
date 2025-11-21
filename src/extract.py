@@ -13,4 +13,5 @@ def extract_markdown_links(text: str) -> list[tuple[str, str]]:
 
 def markdown_to_blocks(markdown: str) -> list[str]:
     blocks = markdown.split("\n\n")
-    return list(map(lambda x: x.strip(), filter(lambda x: len(x) > 0, blocks)))
+    stripped_blocks = map(lambda x: x.strip(), blocks)
+    return list(filter(lambda x: len(x) > 0, stripped_blocks))

@@ -1,5 +1,30 @@
 from __future__ import annotations
 
+import re
+
+from block import BlockType
+
+
+def get_tag_from_block_type(block_type: BlockType, block: str) -> str:
+    match block_type:
+        case BlockType.PARAGRAPH:
+            return "p"
+        case BlockType.HEADING:
+            prefix = re.match("^#{1,6}", block)
+            if prefix:
+                level = len(prefix.group(0))
+                return f"h{level}"
+            # fallback is level cannot be determined
+            return "h1"
+        case BlockType.CODE:
+            return "pre"
+        case BlockType.QUOTE:
+            return "blockquote"
+        case BlockType.UNORDERED_LIST:
+            return "ul"
+        case BlockType.ORDERED_LIST:
+            return "ol"
+
 
 class HTMLNode:
     def __init__(
