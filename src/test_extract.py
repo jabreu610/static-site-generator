@@ -1,6 +1,11 @@
 import unittest
 
-from extract import extract_markdown_images, extract_markdown_links, markdown_to_blocks
+from extract import (
+    extract_markdown_images,
+    extract_markdown_links,
+    extract_title,
+    markdown_to_blocks,
+)
 
 
 class TestExtract(unittest.TestCase):
@@ -151,6 +156,20 @@ Paragraph two"""
         expected = []
         output = markdown_to_blocks(input)
         self.assertListEqual(expected, output)
+
+    def test_extract_title(self):
+        input = """
+# a test header
+"""
+        expected = "a test header"
+        output = extract_title(input)
+        self.assertEqual(expected, output)
+
+    def test_extract_tttle_exception(self):
+        input = """### Test title"""
+        with self.assertRaises(ValueError) as e:
+            extract_title(input)
+        self.assertEqual(str(e.exception), "Header not found in input")
 
 
 if __name__ == "__main__":
