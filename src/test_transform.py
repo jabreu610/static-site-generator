@@ -44,7 +44,10 @@ class TestTransform(unittest.TestCase):
         node = TextNode("Alt text", TextType.IMAGE, "https://example.com/image.png")
         html_node = text_node_to_html_node(node)
         # IMAGE case currently returns empty src and alt values
-        self.assertEqual(html_node.to_html(), '<img src="" alt="" ></img>')
+        self.assertEqual(
+            html_node.to_html(),
+            '<img src="https://example.com/image.png" alt="Alt text" ></img>',
+        )
 
     def test_text_node_to_html_link_without_url(self):
         # Edge case: link without URL raises ValueError

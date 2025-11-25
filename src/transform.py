@@ -74,7 +74,9 @@ def text_node_to_html_node(text_node: TextNode) -> LeafNode:
                 return LeafNode("a", text_node.text, {"href": text_node.url})
             raise ValueError("Text nodes of type 'LINK' must include a URL")
         case TextType.IMAGE:
-            return LeafNode("img", "", {"src": "", "alt": ""})
+            return LeafNode(
+                "img", "", {"src": text_node.url or "", "alt": text_node.text}
+            )
 
 
 def split_nodes_delimiter(
