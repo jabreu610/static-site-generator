@@ -39,6 +39,22 @@ def generate_page(from_path, template_path, dest_path):
     dest.write_text(out)
 
 
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+    with os.scandir(dir_path_content) as entries:
+        for entry in entries:
+            src = os.path.join(dir_path_content, entry.name)
+            if entry.is_file() and entry.name.endswith(".md"):
+                generate_page(
+                    src,
+                    template_path,
+                    os.path.join(dest_dir_path, entry.name.replace(".md", ".html")),
+                )
+            elif entry.is_dir():
+                generate_pages_recursive(
+                    src, template_path, os.path.join(dest_dir_path, entry.name)
+                )
+
+
 def read_file_to_string(path):
     out = None
     with open(path, "r") as file:
@@ -48,7 +64,7 @@ def read_file_to_string(path):
 
 def main():
     initialize_public()
-    generate_page("content/index.md", "template.html", "public/index.html")
+    generate_pages_recursive("content", "template.html", "public")
 
 
 main()
